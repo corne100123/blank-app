@@ -1,0 +1,71 @@
+import sqlite3
+import psycopg2
+from psycopg2 import sql
+
+# --- CONFIGURATION ---
+SQLITE_DB = "NewLoanManager.db"
+POSTGRES_CONFIG = {
+    "host": "localhost",
+    "database": "usizo_platform",
+    "user": "postgres",
+    "password": "your_password"
+}
+TENANT_SCHEMA = "tenant_centurion"
+
+def migrate():
+    # 1. Connect to both databases
+    sl_conn = sqlite3.connect(SQLITE_DB)
+    pg_conn = psycopg2.connect(**POSTGRES_CONFIG)
+    pg_conn.autocommit = True
+    pg_cur = pg_conn.cursor()
+
+    print(f"🚀 Initializing Schema: {TENANT_SCHEMA}...")
+
+    # 2. Setup PostgreSQL Environment (Blueprint Sec 3 & 5)
+    pg_cur.execute(f"CREATE SCHEMA IF NOT EXISTS {TENANT_SCHEMA};")
+    pg_cur.execute("CREATE EXTENSION IF NOT EXISTS ltree;")
+    
+    # Create the Multi-Tenant Clients Table with ltree
+    pg_cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {TENANT_SCHEMA}.clients (
+            client_id SERIAL PRIMARY KEY,
+            path ltree, -- The Genealogy Path
+            surname TEXT,
+            initials TEXT,
+            id_number TEXT UNIQUE,
+            phone_cell TEXT,
+            employer TEXT,
+            total_gross DECIMAL(12,2),
+            disposable DECIMAL(12,2),
+            status TEXT
+        );
+        CREATE INDEX IF NOT EXISTS path_gist_idx ON {TENANT_SCHEMA}.clients USING GIST (path);
+    """)
+
+    # 3. Migrate Clients & Initialize Root Paths
+    print("📦 Migrating Clients...")
+    sl_cur = sl_conn.cursor()
+    sl_cur.execute("SELECT surname, initials, id_number, phone_cell, employer, total_gross, disposable, status FROM clients")
+    
+    for row in sl_cur.fetchall():
+        # For the migration, we set every existing client as a 'root' node
+        # Format: root.{client_id}
+        surname, initials, id_no, phone, emp, gross, disp, status = row
+        
+        pg_cur.execute(f"""
+            INSERT INTO {TENANT_SCHEMA}.clients 
+            (surname, initials, id_number, phone_cell, employer, total_gross, disposable, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING client_id
+        """, (surname, initials, id_no, phone, emp, gross, disp, status))
+        
+        new_id = pg_cur.fetchone()[0]
+        # Update path to be valid ltree: root.ID
+        pg_cur.execute(f"UPDATE {TENANT_SCHEMA}.clients SET path = %s WHERE client_id = %s", 
+                       (f"root.{new_id}", new_id))
+
+    print(f"✅ Migration to {TENANT_SCHEMA} Complete.")
+    pg_conn.close()
+    sl_conn.close()
+
+if __name__ == "__main__":
+    migrate()
