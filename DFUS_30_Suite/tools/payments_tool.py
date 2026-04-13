@@ -51,20 +51,28 @@ def run(get_db_ignored, audit_tool_ignored):
                 try:
                     with get_local_connection() as conn:
                         cursor = conn.cursor()
-                        
+
+                        # Get current agent ID from session state
+                        agent_username = st.session_state.get('username')
+                        if agent_username:
+                            agent_id = cursor.execute("SELECT user_id FROM users WHERE username = ?", (agent_username,)).fetchone()
+                            agent_id = agent_id[0] if agent_id else None
+                        else:
+                            agent_id = None
+
                         # UPDATED: Using 'date' and 'type' to match your existing table
                         cursor.execute("""
-                            INSERT INTO payment_history (loan_id, amount, date, type)
-                            VALUES (?, ?, ?, ?)
-                        """, (loan_id, pay_amount, pay_date.strftime('%Y-%m-%d'), pay_type))
-                        
+                            INSERT INTO payment_history (loan_id, amount, date, type, agent_id)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (loan_id, pay_amount, pay_date.strftime('%Y-%m-%d'), pay_type, agent_id))
+
                         # Update balance
                         new_balance = float(loan_data['balance']) - pay_amount
                         new_status = 'Settled' if new_balance <= 0 else 'Active'
-                        
-                        cursor.execute("UPDATE loans SET balance = ?, status = ? WHERE loan_id = ?", 
+
+                        cursor.execute("UPDATE loans SET balance = ?, status = ? WHERE loan_id = ?",
                                      (new_balance, new_status, loan_id))
-                        
+
                         conn.commit()
                         st.success("✅ Payment Recorded!")
                         st.rerun()

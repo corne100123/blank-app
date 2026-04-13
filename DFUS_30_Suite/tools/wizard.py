@@ -102,11 +102,20 @@ def run(get_db_ignored, audit_tool_ignored):
                     try:
                         with get_local_connection() as conn:
                             cursor = conn.cursor()
+
+                            # Get current agent ID from session state
+                            agent_username = st.session_state.get('username')
+                            if agent_username:
+                                agent_id = cursor.execute("SELECT user_id FROM users WHERE username = ?", (agent_username,)).fetchone()
+                                agent_id = agent_id[0] if agent_id else None
+                            else:
+                                agent_id = None
+
                             cursor.execute("""
-                                INSERT INTO loans (client_id, principal, balance, status, due_date)
-                                VALUES (?, ?, ?, 'Active', DATE('now', '+30 days'))
-                            """, (int(client['client_id']), float(principal), float(total_repay)))
-                            
+                                INSERT INTO loans (client_id, principal, balance, status, due_date, agent_id)
+                                VALUES (?, ?, ?, 'Active', DATE('now', '+30 days'), ?)
+                            """, (int(client['client_id']), float(principal), float(total_repay), agent_id))
+
                             conn.commit()
                             st.balloons()
                             st.success("Loan Issued Successfully!")
