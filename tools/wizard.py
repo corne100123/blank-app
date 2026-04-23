@@ -20,7 +20,7 @@ def calculate_nca_min_expense(gross):
 
 # --- 3. MAIN LOAN TOOL ---
 def run(get_db_ignored, audit_tool_ignored):
-    st.header("💸 New Loan Issue Tool")
+    st.header("💸Loan Tool")
     
     # --- STEP 1: FIND THE CUSTOMER (UPDATED) ---
     st.subheader("1. Select Borrower")

@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import os
 from datetime import datetime
 
 # --- 1. DATABASE CONNECTION ---
 def get_local_connection():
-    return sqlite3.connect("../NewLoanManager.db")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
+    return sqlite3.connect(db_path)
 
 # --- 2. HELPER: NCA CALCULATIONS ---
 def calculate_nca_min_expense(gross):

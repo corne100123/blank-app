@@ -1,13 +1,16 @@
 import streamlit as st
 import sqlite3
+import os
 from datetime import datetime
 
 def get_local_connection():
-    return sqlite3.connect("../NewLoanManager.db")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
+    return sqlite3.connect(db_path)
 
 # --- MAIN APP ---
 def run(get_db_ignored, audit_tool_ignored):
-    st.header("📝 Comprehensive Client Onboarding")
+    st.header("📝 Client Onboarding")
     st.markdown("Enter full KYC, Employment, and Compliance details below.")
 
     # Navigation Tabs

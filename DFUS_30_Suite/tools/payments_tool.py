@@ -2,14 +2,17 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import sqlite3
+import os
 
 # --- 1. DATABASE CONNECTION ---
 def get_local_connection():
-    return sqlite3.connect("../NewLoanManager.db")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
+    return sqlite3.connect(db_path)
 
 # --- 2. MAIN PAYMENTS TOOL ---
 def run(get_db_ignored, audit_tool_ignored):
-    st.header("💸 Payment Processing Hub")
+    st.header("💸 Payments")
 
     # --- STEP 1: SELECT LOAN ---
     with get_local_connection() as conn:

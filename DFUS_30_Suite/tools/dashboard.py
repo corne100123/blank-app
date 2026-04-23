@@ -11,7 +11,7 @@ def get_local_connection():
     return sqlite3.connect(db_path)
 
 def run(get_db_ignored):
-    st.title("📊 USIZO Business Overview - Admin Dashboard")
+    st.title("📊- Admin Dashboard")
 
     # We ignore the 'get_db_ignored' coming from app.py because it's broken (Postgres)
     # We use our own local connection instead.

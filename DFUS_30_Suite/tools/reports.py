@@ -1,15 +1,18 @@
 import streamlit as st
 import pandas as pd
 import io
+import os
 import sqlite3
 from datetime import datetime
 
 # --- DATABASE CONNECTION ---
 def get_local_connection():
-    return sqlite3.connect("../NewLoanManager.db")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
+    return sqlite3.connect(db_path)
 
 def run(get_db_ignored):
-    st.header("📊 Ledger Reports & Exports")
+    st.header("📊 Reports & Exports")
 
     try:
         with get_local_connection() as conn:
