@@ -5,6 +5,8 @@ ENV PYTHONUNBUFFERED=1 \
     STREAMLIT_SERVER_HEADLESS=true \
     STREAMLIT_SERVER_ENABLE_CORS=false
 
+
+
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
@@ -14,4 +16,5 @@ COPY . /app
 
 EXPOSE 8501
 
-ENTRYPOINT ["streamlit", "run", "DFUS_30_Suite/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+

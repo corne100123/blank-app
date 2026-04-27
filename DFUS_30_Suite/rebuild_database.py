@@ -24,9 +24,27 @@ def rebuild_clients():
     cursor.execute("DROP TABLE IF EXISTS loans")
     cursor.execute("DROP TABLE IF EXISTS payment_history")
     cursor.execute("DROP TABLE IF EXISTS expenses")
+    cursor.execute("DROP TABLE IF EXISTS users")
     print("✅ Old tables deleted.")
 
     # 3. CREATE THE NEW TABLES (The 'Correct' Structure)
+    print("--- 🔨 Building New 'Users' Table ---")
+    cursor.execute("""
+        CREATE TABLE users (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password_hash TEXT,
+            full_name TEXT,
+            email TEXT,
+            phone TEXT,
+            role TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP
+        )
+    """)
+    print("✅ Users table created.")
+
     print("--- 🔨 Building New 'Clients' Table ---")
     cursor.execute("""
         CREATE TABLE clients (
@@ -55,13 +73,15 @@ def rebuild_clients():
         CREATE TABLE loans (
             loan_id INTEGER PRIMARY KEY AUTOINCREMENT,
             client_id INTEGER,
+            agent_id INTEGER,
             due_date TEXT,
             principal REAL,
             balance REAL,
             amount_paid REAL DEFAULT 0.0,
             status TEXT DEFAULT 'Active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(client_id) REFERENCES clients(client_id)
+            FOREIGN KEY(client_id) REFERENCES clients(client_id),
+            FOREIGN KEY(agent_id) REFERENCES users(user_id)
         )
     """)
     print("✅ Loans table created.")
@@ -71,10 +91,12 @@ def rebuild_clients():
         CREATE TABLE payment_history (
             payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
             loan_id INTEGER,
+            agent_id INTEGER,
             amount REAL,
             date TEXT,
             type TEXT,
-            FOREIGN KEY(loan_id) REFERENCES loans(loan_id)
+            FOREIGN KEY(loan_id) REFERENCES loans(loan_id),
+            FOREIGN KEY(agent_id) REFERENCES users(user_id)
         )
     """)
     print("✅ Payment history table created.")
@@ -93,6 +115,16 @@ def rebuild_clients():
 
     # 4. INSERT A TEST CLIENT (So the tool works immediately)
     print("--- 🌱 Seeding Test Data ---")
+    
+    # Insert a test agent with columns matching user_management.py
+    # Using a dummy hash for 'admin' (This matches hashlib.sha256('admin123').hexdigest())
+    admin_pwd_hash = "240be518ebbafd630d06f022ce0d330c5e2310b988ce3920973a9414e8574d53"
+    cursor.execute("""
+        INSERT INTO users (username, password_hash, full_name, role, is_active)
+        VALUES ('admin', ?, 'System Admin', 'Admin', 1)
+    """, (admin_pwd_hash,))
+    admin_id = cursor.lastrowid
+
     cursor.execute("""
         INSERT INTO clients (first_name, last_name, id_number, phone, total_gross, status) 
         VALUES ('John', 'Doe', '9901015000080', '0821234567', 15000, 'Active')
@@ -101,16 +133,16 @@ def rebuild_clients():
 
     # Insert a test loan
     cursor.execute("""
-        INSERT INTO loans (client_id, due_date, principal, balance, amount_paid, status)
-        VALUES (1, '2026-04-30', 5000.0, 5000.0, 0.0, 'Active')
-    """)
+        INSERT INTO loans (client_id, agent_id, due_date, principal, balance, amount_paid, status)
+        VALUES (1, ?, '2026-04-30', 5000.0, 5000.0, 0.0, 'Active')
+    """, (admin_id,))
     print("✅ Test Loan added.")
 
     # Insert a test payment record
     cursor.execute("""
-        INSERT INTO payment_history (loan_id, amount, date, type)
-        VALUES (1, 0.0, '2026-04-01', 'Initial')
-    """)
+        INSERT INTO payment_history (loan_id, agent_id, amount, date, type)
+        VALUES (1, ?, 0.0, '2026-04-01', 'Initial')
+    """, (admin_id,))
     print("✅ Test payment history record added.")
 
     conn.commit()
