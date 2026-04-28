@@ -1,6 +1,6 @@
 import sqlite3
 
-db_path = r"D:\DFUS_30_Suite\NewLoanManager.db"
+db_path = r"D:\FUS_30_Suite\NewLoanManager.db"
 
 def run_force_fix():
     print(f"🔧 Connecting to {db_path}...")

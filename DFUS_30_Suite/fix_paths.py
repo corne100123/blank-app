@@ -5,8 +5,8 @@ tools_folder = "../tools"
 
 # 2. The code currently in your files (the broken relative path)
 # We look for both single and double quotes just in case
-bad_code_1 = 'sqlite3.connect(r"D:\\DFUS_30_Suite\\NewLoanManager.db")'
-bad_code_2 = "sqlite3.connect(r'D:\\DFUS_30_Suite\\NewLoanManager.db')"
+bad_code_1 = 'sqlite3.connect(r"D:\\FUS_30_Suite\\NewLoanManager.db")'
+bad_code_2 = "sqlite3.connect(r'D:\\FUS_30_Suite\\NewLoanManager.db')"
 
 # 3. The fix: The absolute path to the database
 # For Linux
