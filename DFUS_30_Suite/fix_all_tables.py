@@ -1,7 +1,9 @@
 import sqlite3
+import os
 
 # Pointing to your specific database location
-db_path = r"D:\DFUS_30_Suite\NewLoanManager.db"
+base_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(base_dir, "NewLoanManager.db")
 
 def run_fix():
     print(f"🔧 Connecting to database at: {db_path}")

@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import os
 import hashlib
+from rebuild_database import rebuild_clients
 
 # --- 1. SETUP ---
 st.set_page_config(page_title="USIZO Suite", layout="wide")
@@ -9,9 +10,20 @@ st.set_page_config(page_title="USIZO Suite", layout="wide")
 if 'role' not in st.session_state:
     st.session_state.role = None
 
+def init_db():
+    """Ensures the database is initialized for the demo."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = os.path.join(base_dir, "NewLoanManager.db")
+    if not os.path.exists(db_path):
+        with st.spinner("Initializing demo database..."):
+            rebuild_clients()
+
 def get_db():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return sqlite3.connect(os.path.join(base_dir, "NewLoanManager.db"))
+
+# Run initialization
+init_db()
 
 # --- 2. LOGIN WITH ROLES ---
 if not st.session_state.role:

@@ -9,6 +9,13 @@ def get_local_connection():
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
     return sqlite3.connect(db_path)
 
+# --- LOAN PACKAGE CONFIGURATION ---
+LOAN_PACKAGES = {
+    "R 850 (Principal: R 600)": {"principal": 600.0, "total": 850.0},
+    "R 1130 (Principal: R 800)": {"principal": 800.0, "total": 1130.0},
+    "R 1400 (Principal: R 1000)": {"principal": 1000.0, "total": 1400.0}
+}
+
 # --- 2. HELPER: NCA CALCULATIONS ---
 def calculate_nca_min_expense(gross):
     """NCA Regulation 23A Minimum Expense Norms"""
@@ -69,8 +76,28 @@ def run(get_db_ignored, audit_tool_ignored):
         st.markdown("---")
         with st.form("loan_contract_form"):
             c1, c2 = st.columns(2)
+
+            # Agent Allocation (Admin/Manager only)
+            agent_id_override = None
+            if st.session_state.get('role') in ['Admin', 'Manager']:
+                try:
+                    with get_local_connection() as conn:
+                        agents_df = pd.read_sql_query("SELECT user_id, full_name, username FROM users WHERE role = 'Agent' AND is_active = 1", conn)
+                        if not agents_df.empty:
+                            agent_options = {f"{r['full_name']} ({r['username']})": r['user_id'] for _, r in agents_df.iterrows()}
+                            selected_agent_label = st.selectbox("Allocate to Agent", options=list(agent_options.keys()))
+                            agent_id_override = agent_options[selected_agent_label]
+                except Exception as e:
+                    st.error(f"Error loading agents: {e}")
+
             with c1:
-                principal = st.number_input("Principal Amount (Cash Out) (R)", min_value=100.0, step=100.0, value=1000.0)
+                loan_pkg = st.selectbox("Loan Package (Repayment amount)", options=list(LOAN_PACKAGES.keys()) + ["Custom"])
+                if loan_pkg != "Custom":
+                    principal = LOAN_PACKAGES[loan_pkg]["principal"]
+                    st.info(f"Principal (Cash Out): R {principal:,.2f}")
+                else:
+                    principal = st.number_input("Principal Amount (Cash Out) (R)", min_value=100.0, step=100.0, value=1000.0)
+                
                 days = st.selectbox("Loan Term", ["30 Days", "1 Month"])
             
             with c2:
@@ -85,30 +112,35 @@ def run(get_db_ignored, audit_tool_ignored):
                 extra_fee_2_label = st.text_input("Additional Fee 2 Label", value="Legal Fee")
                 extra_fee_2_amount = st.number_input("Additional Fee 2 Amount (R)", min_value=0.0, value=0.0, step=10.0)
 
-                initiation_fee = min(principal * (init_percent / 100), init_cap)
-                interest = principal * (interest_rate / 100)
-                additional_fees = extra_fee_1_amount + extra_fee_2_amount
-                fee_display = f"Init R{initiation_fee:.2f} | Srv R{service_fee:.2f} | Int R{interest:.2f}"
-                if extra_fee_1_amount > 0:
-                    fee_display += f" | {extra_fee_1_label}: R{extra_fee_1_amount:.2f}"
-                if extra_fee_2_amount > 0:
-                    fee_display += f" | {extra_fee_2_label}: R{extra_fee_2_amount:.2f}"
+                if loan_pkg != "Custom":
+                    total_repay = LOAN_PACKAGES[loan_pkg]["total"]
+                    fee_display = f"Fixed Package Repayment"
+                else:
+                    initiation_fee = min(principal * (init_percent / 100), init_cap)
+                    interest = principal * (interest_rate / 100)
+                    additional_fees = extra_fee_1_amount + extra_fee_2_amount
+                    total_repay = principal + initiation_fee + service_fee + interest + additional_fees
+                    fee_display = f"Init R{initiation_fee:.2f} | Srv R{service_fee:.2f} | Int R{interest:.2f}"
+                    if extra_fee_1_amount > 0: fee_display += f" | {extra_fee_1_label}: R{extra_fee_1_amount:.2f}"
+                    if extra_fee_2_amount > 0: fee_display += f" | {extra_fee_2_label}: R{extra_fee_2_amount:.2f}"
+                
                 st.caption(fee_display)
 
-            total_repay = principal + initiation_fee + service_fee + interest + additional_fees
-            
             st.metric("Total Repayment Amount", f"R {total_repay:,.2f}")
             
             with st.expander("💰 Fee Breakdown"):
-                st.write(f"Principal: R{principal:,.2f}")
-                st.write(f"Initiation Fee ({init_percent}%): R{initiation_fee:,.2f}")
-                st.write(f"Service Fee: R{service_fee:,.2f}")
-                st.write(f"Interest ({interest_rate}%): R{interest:,.2f}")
-                if extra_fee_1_amount > 0:
-                    st.write(f"{extra_fee_1_label}: R{extra_fee_1_amount:,.2f}")
-                if extra_fee_2_amount > 0:
-                    st.write(f"{extra_fee_2_label}: R{extra_fee_2_amount:,.2f}")
-                st.write(f"**Total: R{total_repay:,.2f}**")
+                if loan_pkg != "Custom":
+                    st.write(f"Principal: R{principal:,.2f}")
+                    st.write(f"Total Fees/Interest: R{total_repay - principal:,.2f}")
+                    st.write(f"**Total: R{total_repay:,.2f}**")
+                else:
+                    st.write(f"Principal: R{principal:,.2f}")
+                    st.write(f"Initiation Fee ({init_percent}%): R{initiation_fee:,.2f}")
+                    st.write(f"Service Fee: R{service_fee:,.2f}")
+                    st.write(f"Interest ({interest_rate}%): R{interest:,.2f}")
+                    if extra_fee_1_amount > 0: st.write(f"{extra_fee_1_label}: R{extra_fee_1_amount:,.2f}")
+                    if extra_fee_2_amount > 0: st.write(f"{extra_fee_2_label}: R{extra_fee_2_amount:,.2f}")
+                    st.write(f"**Total: R{total_repay:,.2f}**")
             
             # --- GUARD RAILS (NCA) ---
             gross = client['total_gross'] if 'total_gross' in client else 0.0
@@ -129,10 +161,22 @@ def run(get_db_ignored, audit_tool_ignored):
                     try:
                         with get_local_connection() as conn:
                             cursor = conn.cursor()
+                            
+                            # Determine agent_id (Admin selection or current user)
+                            if agent_id_override is not None:
+                                agent_id = agent_id_override
+                            else:
+                                agent_username = st.session_state.get('username')
+                                if agent_username:
+                                    agent_res = cursor.execute("SELECT user_id FROM users WHERE username = ?", (agent_username,)).fetchone()
+                                    agent_id = agent_res[0] if agent_res else None
+                                else:
+                                    agent_id = None
+
                             cursor.execute("""
-                                INSERT INTO loans (client_id, principal, balance, status, due_date)
-                                VALUES (?, ?, ?, 'Active', DATE('now', '+30 days'))
-                            """, (int(client['client_id']), float(principal), float(total_repay)))
+                                INSERT INTO loans (client_id, principal, balance, status, due_date, agent_id)
+                                VALUES (?, ?, ?, 'Active', DATE('now', '+30 days'), ?)
+                            """, (int(client['client_id']), float(principal), float(total_repay), agent_id))
                             
                             conn.commit()
                             st.balloons()
