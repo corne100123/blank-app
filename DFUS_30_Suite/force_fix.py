@@ -1,6 +1,8 @@
 import sqlite3
+import os
 
-db_path = r"D:\FUS_30_Suite\NewLoanManager.db"
+# Dynamic path relative to this script
+db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "NewLoanManager.db")
 
 def run_force_fix():
     print(f"🔧 Connecting to {db_path}...")
