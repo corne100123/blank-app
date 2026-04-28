@@ -22,5 +22,8 @@ if __name__ == "__main__":
         "run",
         app_path,
         "--global.developmentMode=false",
+        "--server.headless=true",
+        "--server.enableCORS=false",
+        "--server.enableXsrfProtection=false",
     ]
     sys.exit(stcli.main())
