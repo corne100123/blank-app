@@ -1,9 +1,7 @@
 import sqlite3
 import os
 
-db_path = "NewLoanManager.db"
-
-def rebuild_clients():
+def rebuild_clients(db_path="NewLoanManager.db"):
     print(f"🔧 Connecting to {db_path}...")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()

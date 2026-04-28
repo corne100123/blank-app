@@ -5,18 +5,13 @@ import hashlib
 import os
 from datetime import datetime
 
-# --- DATABASE CONNECTION ---
-def get_local_connection():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_password(password, password_hash):
     return hash_password(password) == password_hash
 
-def run(get_db_ignored):
+def run(get_db):
     st.header("👥 User Management")
 
     # Check if current user is Admin
@@ -25,7 +20,7 @@ def run(get_db_ignored):
         return
 
     try:
-        with get_local_connection() as conn:
+        with get_db() as conn:
             # Get all users
             users_df = pd.read_sql_query("""
                 SELECT user_id, username, role, full_name, email, phone, is_active, created_at, last_login

@@ -2,32 +2,100 @@ import streamlit as st
 import sqlite3
 import os
 import hashlib
+import json
+import requests
 from rebuild_database import rebuild_clients
 
-# --- 1. SETUP ---
-st.set_page_config(page_title="USIZO Suite", layout="wide")
+# --- 0. HYBRID CONFIGURATION ---
+VERSION = "1.0.0"
+CONFIG_PATH = os.path.expanduser("~/.fus30_config.json")
+
+def load_config():
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'r') as f:
+            return json.load(f)
+    return None
+
+def save_config(biz_name, db_path):
+    config = {"business_name": biz_name, "db_path": db_path}
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(config, f)
+    return config
+
+# --- 1. SESSION & BRANDING ---
+if 'config' not in st.session_state:
+    st.session_state.config = load_config()
 
 if 'role' not in st.session_state:
     st.session_state.role = None
 
+app_name = st.session_state.config['business_name'] if st.session_state.config else "FUS30"
+st.set_page_config(page_title=f"{app_name} | FUS30 Suite", layout="wide")
+
+def check_for_updates():
+    """Cloud-Light: Check for version updates from GitHub."""
+    try:
+        # Replace with your actual GitHub raw URL for version.json
+        update_url = "https://raw.githubusercontent.com/your-org/fus30/main/version.json"
+        response = requests.get(update_url, timeout=1)
+        if response.status_code == 200:
+            remote_version = response.json().get("version")
+            if remote_version and remote_version != VERSION:
+                st.sidebar.info(f"✨ Update Available: {remote_version}")
+    except:
+        pass
+
+# --- SETUP WIZARD (First Run Only) ---
+if not st.session_state.config:
+    st.title("⚙️ FUS30 Setup Wizard")
+    st.markdown("### Welcome to the FUS30 Desktop Interface")
+    st.write("Please configure your local environment to continue.")
+    
+    with st.form("setup_wizard"):
+        biz_name = st.text_input("Business Name", placeholder="e.g. Centurion Microfinance")
+        default_db = os.path.join(os.getcwd(), "fus30_operational.db")
+        db_path = st.text_input("Local Data Storage Path (SQLite)", value=default_db)
+        
+        st.info("💡 Cloud-Light Sync: Your Business Name and ID will be registered to the FUS30 cloud registry, but your operational data stays in the local SQLite file.")
+        
+        if st.form_submit_button("Initialize System"):
+            if biz_name and db_path:
+                # Mock Cloud Registration Placeholder
+                # register_business_to_cloud(biz_name) 
+                st.session_state.config = save_config(biz_name, db_path)
+                
+                # Initialize the new DB if it doesn't exist
+                if not os.path.exists(db_path):
+                    rebuild_clients(db_path=db_path)
+                
+                st.success("Setup complete! Refreshing application...")
+                st.rerun()
+            else:
+                st.error("Both Business Name and Database Path are required.")
+    st.stop()
+
 def init_db():
-    """Ensures the database is initialized for the demo."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, "NewLoanManager.db")
-    if not os.path.exists(db_path):
-        with st.spinner("Initializing demo database..."):
-            rebuild_clients()
+    """Ensures the local database is initialized."""
+    if st.session_state.config:
+        db_path = st.session_state.config.get('db_path')
+        if not os.path.exists(db_path):
+            with st.spinner("Initializing local operational database..."):
+                rebuild_clients(db_path=db_path)
 
 def get_db():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    return sqlite3.connect(os.path.join(base_dir, "NewLoanManager.db"))
+    """Injected database connection using the configured local path."""
+    try:
+        return sqlite3.connect(st.session_state.config['db_path'])
+    except:
+        return sqlite3.connect("NewLoanManager.db")
 
 # Run initialization
 init_db()
 
 # --- 2. LOGIN WITH ROLES ---
 if not st.session_state.role:
-    st.title("🔐 USIZO Login")
+    st.title(f"🔐 {app_name} Login")
+    check_for_updates()
     st.markdown("**Admin access:** Login with an Admin account to manage users and create new accounts.")
     st.markdown("Use the admin username and password to access the User Management panel.")
     st.info("Default admin credentials: `admin` / `usizo2026` (if not changed)")
@@ -107,11 +175,12 @@ if not st.session_state.role:
     st.stop()
 
 # --- 3. THE TWO DIFFERENT LOOKS ---
+check_for_updates()
 role = st.session_state.role
 
 if role == "Agent":
     # --- MOBILE/TABLET VIEW (AGENT) ---
-    st.sidebar.title("📱 USIZO Mobile")
+    st.sidebar.title(f"📱 {app_name} Mobile")
     st.sidebar.caption(f"Logged in: {role}")
     
     # Agents get a simplified, big-button menu
@@ -131,11 +200,11 @@ if role == "Agent":
 else:
     # --- DESKTOP VIEW (MANAGER/ADMIN) ---
     if role == "Admin":
-        st.sidebar.title("👑 USIZO Admin")
+        st.sidebar.title(f"👑 {app_name} Admin")
         st.sidebar.caption("Full System Administration")
         menu = ["👥 User Management", "🏠 Dashboard", "👤 Onboarding", "📝 Client Editor", "➕ Loan Wizard", "💸 Payments", "📊 Reports", "📄 Invoices"]
     else:  # Manager
-        st.sidebar.title("🏢 USIZO Manager")
+        st.sidebar.title(f"🏢 {app_name} Manager")
         st.sidebar.caption("Full System Access")
         menu = ["🏠 Dashboard", "👤 Onboarding", "📝 Client Editor", "➕ Loan Wizard", "💸 Payments", "📊 Reports", "📄 Invoices"]
 

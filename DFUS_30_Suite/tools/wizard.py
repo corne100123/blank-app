@@ -4,12 +4,6 @@ import sqlite3
 import os
 from datetime import datetime
 
-# --- 1. DATABASE CONNECTION ---
-def get_local_connection():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
 # --- LOAN PACKAGE CONFIGURATION ---
 LOAN_PACKAGES = {
     "R 850 (Principal: R 600)": {"principal": 600.0, "total": 850.0},
@@ -27,7 +21,7 @@ def calculate_nca_min_expense(gross):
     else: return 4905.38 + (gross - 50000) * 0.0675
 
 # --- 3. MAIN LOAN TOOL ---
-def run(get_db_ignored, audit_tool_ignored):
+def run(get_db, audit_tool_ignored):
     st.header("💸 New Loan Issue Tool")
     
     # --- STEP 1: FIND THE CUSTOMER (UPDATED) ---
@@ -37,7 +31,7 @@ def run(get_db_ignored, audit_tool_ignored):
     # This solves the "I can't find them" issue immediately.
     client_list = []
     try:
-        with get_local_connection() as conn:
+        with get_db() as conn:
             df_all = pd.read_sql_query("SELECT client_id, first_name, last_name, id_number FROM clients", conn)
             if not df_all.empty:
                 # Create a nice list of strings like "John Doe (900101...)"

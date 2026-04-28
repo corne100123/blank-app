@@ -53,10 +53,13 @@ def run(get_db):
     st.subheader("🚩 Immediate Attention (Upcoming/Overdue)")
     if not loans.empty:
         loans['due_date'] = pd.to_datetime(loans['due_date'])
+        loans['due_date_dt'] = pd.to_datetime(loans['due_date'], errors='coerce')
         # Simplified overdue logic for the dashboard
         overdue = loans[loans['due_date'] < pd.Timestamp.now()]
+        overdue = loans[loans['due_date_dt'] <= pd.Timestamp.now()].copy()
         if not overdue.empty:
             st.warning(f"There are {len(overdue)} loans past their due date.")
+            overdue['due_date'] = overdue['due_date_dt'].dt.strftime('%Y-%m-%d')
             st.dataframe(overdue[['loan_id', 'balance', 'due_date']], use_container_width=True)
         else:
             st.success("No loans are currently overdue.")

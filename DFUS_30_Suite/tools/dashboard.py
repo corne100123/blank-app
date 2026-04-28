@@ -3,20 +3,11 @@ import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
 
-# --- HARDCODED CONNECTION TO FIX DATABASE PATH ---
-def get_local_connection():
-    # Use the same pattern as other tools
-    import os
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
-def run(get_db_ignored):
+def run(get_db):
     st.title("📊- Admin Dashboard")
 
-    # We ignore the 'get_db_ignored' coming from app.py because it's broken (Postgres)
-    # We use our own local connection instead.
     try:
-        with get_local_connection() as conn:
+        with get_db() as conn:
             # Fetching all data with agent information
             loans_query = """
                 SELECT l.*, u.full_name as agent_name, u.username as agent_username
