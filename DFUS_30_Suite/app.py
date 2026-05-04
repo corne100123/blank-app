@@ -9,6 +9,7 @@ from rebuild_database import rebuild_clients
 # --- 0. HYBRID CONFIGURATION ---
 VERSION = "1.0.0"
 CONFIG_PATH = os.path.expanduser("~/.fus30_config.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_config():
     if os.path.exists(CONFIG_PATH):
@@ -53,7 +54,7 @@ if not st.session_state.config:
     
     with st.form("setup_wizard"):
         biz_name = st.text_input("Business Name", placeholder="e.g. Centurion Microfinance")
-        default_db = os.path.join(os.getcwd(), "fus30_operational.db")
+        default_db = os.path.join(BASE_DIR, "fus30_operational.db")
         db_path = st.text_input("Local Data Storage Path (SQLite)", value=default_db)
         
         st.info("💡 Cloud-Light Sync: Your Business Name and ID will be registered to the FUS30 cloud registry, but your operational data stays in the local SQLite file.")
@@ -87,7 +88,7 @@ def get_db():
     try:
         return sqlite3.connect(st.session_state.config['db_path'])
     except:
-        return sqlite3.connect("NewLoanManager.db")
+        return sqlite3.connect(os.path.join(BASE_DIR, "NewLoanManager.db"))
 
 # Run initialization
 init_db()

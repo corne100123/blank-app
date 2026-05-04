@@ -199,7 +199,6 @@ def run(get_db_ignored, audit_tool_ignored):
                         """, (first_name, last_name, id_number, phone, email, full_address, total_gross))
                         
                         conn.commit()
-                        st.balloons()
                         st.success(f"✅ Client {first_name} {last_name} successfully onboarded!")
                         if has_second_job:
                             st.info(f"ℹ️ Recorded both {emp1_name} and {emp2_name} in employment history.")

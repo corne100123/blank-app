@@ -5,7 +5,7 @@ import sqlite3
 from tkinter import Tk, filedialog
 
 # --- CONFIGURATION CONSTANTS ---
-CONFIG_FILE = "config.json"
+CONFIG_FILE = "settings.json"
 
 def load_config():
     """Load user settings from the local JSON file."""

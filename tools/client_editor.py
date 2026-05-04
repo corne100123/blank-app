@@ -3,11 +3,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 
-def get_local_connection():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
-def run(get_db_ignored):
+def run(get_db):
     st.header("🛠️ Comprehensive Client & Loan Editor")
 
     # Main tabs
@@ -20,7 +16,7 @@ def run(get_db_ignored):
         if not search_term:
             st.info("Please search for a client to begin editing.")
         else:
-            with get_local_connection() as conn:
+            with get_db() as conn:
                 query = f"""
                     SELECT * FROM clients 
                     WHERE first_name LIKE '%{search_term}%' 
@@ -57,7 +53,7 @@ def run(get_db_ignored):
                         new_addr = st.text_area("Address", value=client['address'])
                         
                         if st.form_submit_button("💾 Update Personal Info"):
-                            with get_local_connection() as conn:
+                            with get_db() as conn:
                                 conn.execute("UPDATE clients SET first_name=?, last_name=?, id_number=?, phone=?, address=? WHERE client_id=?",
                                             (new_first, new_last, new_id, new_phone, new_addr, client_id))
                                 conn.commit()
@@ -73,7 +69,7 @@ def run(get_db_ignored):
                         new_acc = e2.text_input("Account No", value=client['account_no'] if 'account_no' in client else "")
                         
                         if st.form_submit_button("💾 Update Employment/Bank"):
-                            with get_local_connection() as conn:
+                            with get_db() as conn:
                                 conn.execute("UPDATE clients SET employer=?, total_gross=?, bank_name=?, account_no=? WHERE client_id=?",
                                             (new_emp, new_gross, new_bank, new_acc, client_id))
                                 conn.commit()
@@ -83,7 +79,7 @@ def run(get_db_ignored):
                 with tab_loans:
                     st.subheader("Manage Active Loans")
                     
-                    with get_local_connection() as conn:
+                    with get_db() as conn:
                         loans = pd.read_sql_query(f"SELECT * FROM loans WHERE client_id = {client_id}", conn)
                     
                     if loans.empty:
@@ -109,7 +105,7 @@ def run(get_db_ignored):
                             st.caption("Warning: Changing the balance here directly overrides the ledger calculations.")
                             
                             if st.form_submit_button("⚠️ Apply Balance/Status Change"):
-                                with get_local_connection() as conn:
+                                with get_db() as conn:
                                     conn.execute("UPDATE loans SET balance=?, status=? WHERE loan_id=?", (new_bal, new_status, target_id))
                                     conn.commit()
                                 st.success("Loan balance and status updated.")
@@ -123,7 +119,7 @@ def run(get_db_ignored):
                             
                             if st.form_submit_button("➕ Add Fee to Balance"):
                                 if fee_amount > 0:
-                                    with get_local_connection() as conn:
+                                    with get_db() as conn:
                                         # 1. Increase the loan balance
                                         conn.execute("UPDATE loans SET balance = balance + ? WHERE loan_id = ?", (fee_amount, target_id))
                                         # 2. Record it in payment history as a negative 'Adjustment' for record-keeping if needed, 
@@ -438,7 +434,7 @@ def run(get_db_ignored):
                             failed_count = 0
                             skipped_duplicates = 0
                             
-                            with get_local_connection() as conn:
+                            with get_db() as conn:
                                 # Get existing phones and IDs for duplicate checking
                                 existing_phones = set(conn.execute("SELECT phone FROM clients WHERE phone != ''").fetchall())
                                 existing_phones = {phone[0] for phone in existing_phones}
@@ -575,7 +571,7 @@ def run(get_db_ignored):
                         if st.button("🚀 Import Payments", key="import_payments"):
                             imported_payments = 0
                             failed_payments = 0
-                            with get_local_connection() as conn:
+                            with get_db() as conn:
                                 for _, row in df_payment.iterrows():
                                     try:
                                         # Find client and their loan

@@ -11,17 +11,14 @@ def resolve_path(path):
     return os.path.join(base_path, path)
 
 if __name__ == "__main__":
-    # Ensure the 'DFUS_30_Suite' directory is in the python path for imports
-    sys.path.append(resolve_path("DFUS_30_Suite"))
-    
-    # Path to your main app file
-    app_path = resolve_path(os.path.join("DFUS_30_Suite", "app.py"))
-    
+    # Clear any existing arguments to prevent conflict with Streamlit CLI
     sys.argv = [
         "streamlit",
         "run",
-        app_path,
+        resolve_path(os.path.join("DFUS_30_Suite", "app.py")),
         "--global.developmentMode=false",
+        "--server.port=8501",
+        "--server.address=0.0.0.0",
         "--server.headless=true",
         "--server.enableCORS=false",
         "--server.enableXsrfProtection=false",

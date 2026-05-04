@@ -4,11 +4,6 @@ import pandas as pd
 import sqlite3
 from datetime import datetime
 
-# --- 1. DATABASE CONNECTION ---
-def get_local_connection():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
 # --- LOAN PACKAGE CONFIGURATION ---
 LOAN_PACKAGES = {
     "R 850 (Principal: R 600)": {"principal": 600.0, "total": 850.0},
@@ -26,7 +21,7 @@ def calculate_nca_min_expense(gross):
     else: return 4905.38 + (gross - 50000) * 0.0675
 
 # --- 3. MAIN LOAN TOOL ---
-def run(get_db_ignored, audit_tool_ignored):
+def run(get_db, audit_tool_ignored):
     st.header("💸Loan Tool")
     
     # --- STEP 1: FIND THE CUSTOMER (UPDATED) ---
@@ -36,7 +31,7 @@ def run(get_db_ignored, audit_tool_ignored):
     # This solves the "I can't find them" issue immediately.
     client_list = []
     try:
-        with get_local_connection() as conn:
+        with get_db() as conn:
             df_all = pd.read_sql_query("SELECT client_id, first_name, last_name, id_number FROM clients", conn)
             if not df_all.empty:
                 # Create a nice list of strings like "John Doe (900101...)"
@@ -67,8 +62,8 @@ def run(get_db_ignored, audit_tool_ignored):
         # Extract ID number from the string "John Doe (900101...)"
         selected_id = selected_string.split('(')[-1].replace(')', '')
         
-        with get_local_connection() as conn:
-            client = pd.read_sql_query(f"SELECT * FROM clients WHERE id_number = '{selected_id}'", conn).iloc[0]
+        with get_db() as conn:
+            client = pd.read_sql_query("SELECT * FROM clients WHERE id_number = ?", conn, params=(selected_id,)).iloc[0]
             
         st.success(f"Selected: {client['first_name']} {client['last_name']}")
         
@@ -81,7 +76,7 @@ def run(get_db_ignored, audit_tool_ignored):
             agent_id_override = None
             if st.session_state.get('role') in ['Admin', 'Manager']:
                 try:
-                    with get_local_connection() as conn:
+                    with get_db() as conn:
                         agents_df = pd.read_sql_query("SELECT user_id, full_name, username FROM users WHERE role = 'Agent' AND is_active = 1", conn)
                         if not agents_df.empty:
                             agent_options = {f"{r['full_name']} ({r['username']})": r['user_id'] for _, r in agents_df.iterrows()}
@@ -159,7 +154,7 @@ def run(get_db_ignored, audit_tool_ignored):
             if submitted_loan:
                 if approve_anyway:
                     try:
-                        with get_local_connection() as conn:
+                        with get_db() as conn:
                             cursor = conn.cursor()
                             
                             # Determine agent_id (Admin selection or current user)

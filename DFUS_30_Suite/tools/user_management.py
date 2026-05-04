@@ -78,7 +78,7 @@ def run(get_db):
                 if st.button("Toggle Active Status", key=f"toggle_{selected_user}"):
                     new_status = 0 if user_data['is_active'] else 1
                     try:
-                        with get_local_connection() as conn:
+                        with get_db() as conn:
                             conn.execute(
                                 "UPDATE users SET is_active = ? WHERE username = ?",
                                 (new_status, selected_user)
@@ -101,7 +101,7 @@ def run(get_db):
                             st.error("Password must be at least 6 characters")
                         else:
                             try:
-                                with get_local_connection() as conn:
+                                    with get_db() as conn:
                                     conn.execute(
                                         "UPDATE users SET password_hash = ? WHERE username = ?",
                                         (hash_password(new_password), selected_user)
@@ -123,7 +123,7 @@ def run(get_db):
 
                         if st.button("Update Role", key=f"update_role_{selected_user}"):
                             try:
-                                with get_local_connection() as conn:
+                                with get_db() as conn:
                                     conn.execute(
                                         "UPDATE users SET role = ? WHERE username = ?",
                                         (new_role, selected_user)
@@ -174,7 +174,7 @@ def run(get_db):
 
                 # Check if username already exists
                 try:
-                    with get_local_connection() as conn:
+                    with get_db() as conn:
                         existing = conn.execute(
                             "SELECT username FROM users WHERE username = ?",
                             (username,)
@@ -190,7 +190,7 @@ def run(get_db):
                 else:
                     # Create user
                     try:
-                        with get_local_connection() as conn:
+                        with get_db() as conn:
                             conn.execute("""
                                 INSERT INTO users (username, password_hash, role, full_name, email, phone, is_active)
                                 VALUES (?, ?, ?, ?, ?, ?, 1)

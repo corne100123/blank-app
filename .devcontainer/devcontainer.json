@@ -6,7 +6,8 @@
     "codespaces": {
       "openFiles": [
         "README.md",
-        "streamlit_app.py"
+        "streamlit_app.py",
+        "FUS_30/app.py"
       ]
     },
     "vscode": {

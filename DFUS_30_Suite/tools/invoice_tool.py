@@ -5,11 +5,6 @@ import sqlite3
 from datetime import datetime
 from fpdf import FPDF
 
-# --- DATABASE CONNECTION ---
-def get_local_connection():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
 class InvoicePDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 12)
@@ -65,11 +60,11 @@ def generate_loan_invoice(loan_data, client_data, payments_data):
 
     return pdf
 
-def run(get_db_ignored):
+def run(get_db):
     st.header("📄 Invoice Generator")
 
     try:
-        with get_local_connection() as conn:
+        with get_db() as conn:
             # Get all active loans with client info
             df_loans = pd.read_sql_query("""
                 SELECT l.loan_id, l.client_id, l.principal, l.balance, l.amount_paid, l.due_date, l.status,
@@ -99,7 +94,7 @@ def run(get_db_ignored):
         loan_data = df_loans[df_loans['loan_id'] == selected_loan].iloc[0].to_dict()
 
         # Get payment history for this loan
-        with get_local_connection() as conn:
+        with get_db() as conn:
             payments_data = pd.read_sql_query("""
                 SELECT date, amount, type
                 FROM payment_history
