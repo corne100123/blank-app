@@ -14,7 +14,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def load_config():
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, 'r') as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                return None
     return None
 
 def save_config(biz_name, db_path):
@@ -33,6 +36,7 @@ if 'role' not in st.session_state:
 app_name = st.session_state.config['business_name'] if st.session_state.config else "FUS30"
 st.set_page_config(page_title=f"{app_name} | FUS30 Suite", layout="wide")
 
+@st.cache_data(ttl=3600)
 def check_for_updates():
     """Cloud-Light: Check for version updates from GitHub."""
     try:
@@ -108,7 +112,21 @@ if not st.session_state.role:
             # Check credentials against database
             try:
                 with get_db() as conn:
-                    import hashlib
+                    # Ensure users table exists before querying
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            username TEXT UNIQUE,
+                            password_hash TEXT,
+                            role TEXT,
+                            full_name TEXT,
+                            email TEXT,
+                            phone TEXT,
+                            is_active INTEGER DEFAULT 1,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            last_login TIMESTAMP
+                        )
+                    """)
                     password_hash = hashlib.sha256(password.encode()).hexdigest()
                     user = conn.execute("""
                         SELECT username, role, full_name FROM users
@@ -139,22 +157,6 @@ if not st.session_state.role:
 
                         if default_role:
                             try:
-                                # Ensure users table exists
-                                conn.execute("""
-                                    CREATE TABLE IF NOT EXISTS users (
-                                        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        username TEXT UNIQUE,
-                                        password_hash TEXT,
-                                        role TEXT,
-                                        full_name TEXT,
-                                        email TEXT,
-                                        phone TEXT,
-                                        is_active INTEGER DEFAULT 1,
-                                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                        last_login TIMESTAMP
-                                    )
-                                """)
-
                                 # Insert default user if missing
                                 password_hash = hashlib.sha256(password.encode()).hexdigest()
                                 conn.execute("""

@@ -101,13 +101,13 @@ def run(get_db):
                             st.error("Password must be at least 6 characters")
                         else:
                             try:
-                                    with get_db() as conn:
+                                with get_db() as conn:
                                     conn.execute(
                                         "UPDATE users SET password_hash = ? WHERE username = ?",
                                         (hash_password(new_password), selected_user)
                                     )
                                     conn.commit()
-                                st.success(f"Password updated for {selected_user}")
+                                    st.success(f"Password updated for {selected_user}")
                             except Exception as e:
                                 st.error(f"Error updating password: {e}")
 
