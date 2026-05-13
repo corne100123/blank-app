@@ -54,7 +54,7 @@ def run(get_db):
             disp_active.columns = ['ID', 'First Name', 'Last Name', 'Identity No', 'Principal', 'Current Balance', 'Due Date']
             
             st.write(f"**Total Active Loans:** {len(disp_active)}")
-            st.dataframe(disp_active, use_container_width=True)
+            st.dataframe(disp_active, width='stretch')
 
             # Excel Export Logic
             output_a = io.BytesIO()
@@ -73,7 +73,7 @@ def run(get_db):
             disp_non_active.columns = ['ID', 'First Name', 'Last Name', 'Identity No', 'Phone Number', 'System Status']
             
             st.write(f"**Total Available Clients:** {len(disp_non_active)}")
-            st.dataframe(disp_non_active, use_container_width=True)
+            st.dataframe(disp_non_active, width='stretch')
 
             # Excel Export Logic
             output_na = io.BytesIO()
