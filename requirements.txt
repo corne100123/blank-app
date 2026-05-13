@@ -3,3 +3,5 @@ pandas
 xlsxwriter
 openpyxl
 requests
+fpdf2
+python-docx
