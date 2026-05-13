@@ -32,7 +32,10 @@ def run(get_db, audit_tool_ignored):
     client_list = []
     try:
         with get_db() as conn:
-            df_all = pd.read_sql_query("SELECT client_id, first_name, last_name, id_number FROM clients", conn)
+            query = "SELECT client_id, first_name, last_name, id_number FROM clients"
+            if st.session_state.get('role') == 'Agent':
+                query += f" WHERE assigned_agent_id = {st.session_state.user_id}"
+            df_all = pd.read_sql_query(query, conn)
             if not df_all.empty:
                 # Create a nice list of strings like "John Doe (900101...)"
                 df_all['display_name'] = df_all['first_name'] + " " + df_all['last_name'] + " (" + df_all['id_number'] + ")"

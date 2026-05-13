@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import os
 from datetime import datetime
+from db_helpers import get_active_agents
 
 # --- MAIN APP ---
 def run(get_db, audit_tool_ignored):
@@ -16,6 +17,20 @@ def run(get_db, audit_tool_ignored):
         "📂 Files", 
         "📝 Notes"
     ])
+
+    # Get active agents for assignment
+    db_path = st.session_state.config['db_path']
+    active_agents = get_active_agents(db_path)
+    agent_options = ["Unassigned"] + [f"{agent['full_name']} ({agent['username']})" for agent in active_agents]
+    agent_ids = [None] + [agent['user_id'] for agent in active_agents]
+
+    # For agents, default to themselves
+    default_index = 0
+    if st.session_state.get('role') == 'Agent' and st.session_state.get('user_id'):
+        for i, aid in enumerate(agent_ids):
+            if aid == st.session_state.user_id:
+                default_index = i
+                break
 
     with st.form("onboarding_form"):
         # --- TAB 1: PERSONAL DETAILS ---
@@ -33,6 +48,11 @@ def run(get_db, audit_tool_ignored):
                 dependants = st.number_input("Number of Dependants", min_value=0, value=0)
             
             address = st.text_area("Residential Address", height=80)
+
+            # Agent Assignment
+            selected_agent_index = st.selectbox("Assign to Agent", range(len(agent_options)), 
+                                               format_func=lambda x: agent_options[x], index=default_index)
+            assigned_agent_id = agent_ids[selected_agent_index]
 
        # --- TAB 2: EMPLOYER DETAILS ---
         with tab_employer:
@@ -191,9 +211,11 @@ def run(get_db, audit_tool_ignored):
                         # 4. Insert into Database
                         cursor.execute("""
                             INSERT INTO clients (
-                                first_name, last_name, id_number, phone, email, address, total_gross, status
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
-                        """, (first_name, last_name, id_number, phone, email, full_address, total_gross))
+                                first_name, last_name, id_number, phone, email, address, total_gross, 
+                                salary, employer, work_days, pay_day, bank_name, account_no, status, assigned_agent_id
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)
+                        """, (first_name, last_name, id_number, phone, email, full_address, total_gross,
+                              net_income, emp1_name, ','.join(work_days), pay_day, bank_name, account_no, assigned_agent_id))
                         
                         conn.commit()
                         st.success(f"✅ Client {first_name} {last_name} successfully onboarded!")

@@ -16,6 +16,10 @@ def run(get_db, audit_tool_ignored):
             JOIN clients c ON l.client_id = c.client_id
             WHERE l.status = 'Active'
         """
+        # Filter for agents
+        if st.session_state.get('role') == 'Agent':
+            query += f" AND c.assigned_agent_id = {st.session_state.user_id}"
+        
         active_loans = pd.read_sql_query(query, conn)
 
     if active_loans.empty:

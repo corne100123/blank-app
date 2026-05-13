@@ -116,14 +116,15 @@ if not st.session_state.role:
                     """)
                     password_hash = hashlib.sha256(password.encode()).hexdigest()
                     user = conn.execute("""
-                        SELECT username, role, full_name FROM users
+                        SELECT user_id, username, role, full_name FROM users
                         WHERE username = ? AND password_hash = ? AND is_active = 1
                     """, (username, password_hash)).fetchone()
 
                     if user:
-                        st.session_state.role = user[1]  # role
-                        st.session_state.username = user[0]  # username
-                        st.session_state.full_name = user[2]  # full_name
+                        st.session_state.role = user[2]  # role
+                        st.session_state.username = user[1]  # username
+                        st.session_state.full_name = user[3]  # full_name
+                        st.session_state.user_id = user[0]  # user_id
 
                         # Update last login
                         conn.execute(
@@ -152,9 +153,15 @@ if not st.session_state.role:
                                 """, (username, password_hash, default_role, username.capitalize()))
                                 conn.commit()
 
+                                # Fetch the user_id
+                                user_data = conn.execute("""
+                                    SELECT user_id FROM users WHERE username = ?
+                                """, (username,)).fetchone()
+
                                 st.session_state.role = default_role
                                 st.session_state.username = username
                                 st.session_state.full_name = username.capitalize()
+                                st.session_state.user_id = user_data[0] if user_data else None
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Failed to create bootstrap user: {e}")

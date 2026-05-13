@@ -80,7 +80,9 @@ def rebuild_clients(db_path=None, biz_name=None):
             bank_name TEXT,
             account_no TEXT,
             status TEXT DEFAULT 'Active',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            assigned_agent_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(assigned_agent_id) REFERENCES users(user_id)
         )
     """)
     print("✅ Clients table created.")
@@ -129,6 +131,40 @@ def rebuild_clients(db_path=None, biz_name=None):
         )
     """)
     print("✅ Expenses table created.")
+
+    print("--- 🔨 Building New 'Invoices' Table ---")
+    cursor.execute("""
+        CREATE TABLE invoices (
+            invoice_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER,
+            agent_id INTEGER,
+            invoice_number TEXT UNIQUE,
+            amount REAL,
+            due_date TEXT,
+            status TEXT DEFAULT 'Draft',
+            data TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(client_id) REFERENCES clients(client_id),
+            FOREIGN KEY(agent_id) REFERENCES users(user_id)
+        )
+    """)
+    print("✅ Invoices table created.")
+
+    print("--- 🔨 Building New 'Invoice Audit' Table ---")
+    cursor.execute("""
+        CREATE TABLE invoice_audit (
+            audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_id INTEGER,
+            agent_id INTEGER,
+            action TEXT,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(invoice_id) REFERENCES invoices(invoice_id),
+            FOREIGN KEY(agent_id) REFERENCES users(user_id)
+        )
+    """)
+    print("✅ Invoice audit table created.")
 
     # 4. INSERT BUSINESS PROFILE
     if biz_name:
