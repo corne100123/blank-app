@@ -1,11 +1,15 @@
 import sqlite3
 import os
+from config import _get_configured_db_path_for_scripts
 
-# Pointing to your specific database location
-base_dir = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(base_dir, "NewLoanManager.db")
+# Pointing to the configured or default database location
+db_path = _get_configured_db_path_for_scripts()
+if not db_path:
+    print("Error: Database path not found in configuration. Please run the main app setup first.")
+    exit(1)
 
 def run_fix():
+    os.makedirs(os.path.dirname(db_path), exist_ok=True) # Ensure directory exists
     print(f"🔧 Connecting to database at: {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()

@@ -5,17 +5,11 @@ import os
 import sqlite3
 from datetime import datetime
 
-# --- DATABASE CONNECTION ---
-def get_local_connection():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
-def run(get_db_ignored):
+def run(get_db):
     st.header("📊 Reports & Exports")
 
     try:
-        with get_local_connection() as conn:
+        with get_db() as conn:
             # Fixed: Changed 'surname' to 'last_name' to match the database
             df_clients = pd.read_sql_query("""
                 SELECT client_id, first_name, last_name, id_number, phone, status as client_status 

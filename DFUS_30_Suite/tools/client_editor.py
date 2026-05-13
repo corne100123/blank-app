@@ -23,7 +23,8 @@ def run(get_db):
                     OR last_name LIKE '%{search_term}%' 
                     OR id_number LIKE '%{search_term}%'
                 """
-                results = pd.read_sql_query(query, conn)
+                search_param = f"%{search_term}%"
+                results = pd.read_sql_query(query, conn, params=(search_param, search_param, search_param))
 
             if results.empty:
                 st.warning("No clients found.")

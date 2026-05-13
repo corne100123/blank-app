@@ -1,9 +1,10 @@
 import sqlite3
 import pandas as pd
 import datetime
+from config import get_default_db_path
 
 # 1. SETUP: Create the new Database
-conn = sqlite3.connect("NewLoanManager.db")
+conn = sqlite3.connect(get_default_db_path())
 cursor = conn.cursor()
 
 # Create Clients Table (No changes here)
@@ -99,7 +100,7 @@ try:
         ))
 
     conn.commit()
-    print("Migration Complete! Your data is now in 'NewLoanManager.db'")
+    print(f"Migration Complete! Your data is now in '{get_default_db_path()}'")
 
 except FileNotFoundError:
     print("WARNING: Could not find 'client_list.xlsx' or 'active_loans.xlsx'. Please create them first.")

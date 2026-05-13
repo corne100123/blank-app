@@ -5,28 +5,10 @@ import hashlib
 import json
 import requests
 from rebuild_database import rebuild_clients
+from config import load_config, save_config, _get_configured_db_path_for_scripts, get_default_db_path
 
 # --- 0. HYBRID CONFIGURATION ---
 VERSION = "1.0.0"
-CONFIG_PATH = os.path.expanduser("~/.fus30_config.json")
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-def load_config():
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, 'r') as f:
-            try:
-                return json.load(f)
-            except (json.JSONDecodeError, IOError):
-                return None
-    return None
-
-def save_config(biz_name, db_path):
-    config = {"business_name": biz_name, "db_path": db_path}
-    with open(CONFIG_PATH, 'w') as f:
-        json.dump(config, f)
-    return config
-
-# --- 1. SESSION & BRANDING ---
 if 'config' not in st.session_state:
     st.session_state.config = load_config()
 
@@ -40,25 +22,27 @@ st.set_page_config(page_title=f"{app_name} | FUS30 Suite", layout="wide")
 def check_for_updates():
     """Cloud-Light: Check for version updates from GitHub."""
     try:
-        # Replace with your actual GitHub raw URL for version.json
-        update_url = "https://raw.githubusercontent.com/your-org/fus30/main/version.json"
-        response = requests.get(update_url, timeout=1)
+        update_url = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/version.json"
+        if "YOUR_USERNAME" in update_url or "YOUR_REPO" in update_url:
+            return
+
+        response = requests.get(update_url, timeout=2)
         if response.status_code == 200:
             remote_version = response.json().get("version")
             if remote_version and remote_version != VERSION:
                 st.sidebar.info(f"✨ Update Available: {remote_version}")
-    except:
+    except requests.RequestException:
         pass
 
 # --- SETUP WIZARD (First Run Only) ---
 if not st.session_state.config:
-    st.title("⚙️ FUS30 Setup Wizard")
+    st.title(" FUS30 Setup Wizard")
     st.markdown("### Welcome to the FUS30 Desktop Interface")
     st.write("Please configure your local environment to continue.")
     
     with st.form("setup_wizard"):
         biz_name = st.text_input("Business Name", placeholder="e.g. Centurion Microfinance")
-        default_db = os.path.join(BASE_DIR, "fus30_operational.db")
+        default_db = get_default_db_path()
         db_path = st.text_input("Local Data Storage Path (SQLite)", value=default_db)
         
         st.info("💡 Cloud-Light Sync: Your Business Name and ID will be registered to the FUS30 cloud registry, but your operational data stays in the local SQLite file.")
@@ -66,12 +50,12 @@ if not st.session_state.config:
         if st.form_submit_button("Initialize System"):
             if biz_name and db_path:
                 # Mock Cloud Registration Placeholder
-                # register_business_to_cloud(biz_name) 
+                # register_business_to_cloud(biz_name)
                 st.session_state.config = save_config(biz_name, db_path)
                 
                 # Initialize the new DB if it doesn't exist
                 if not os.path.exists(db_path):
-                    rebuild_clients(db_path=db_path)
+                    rebuild_clients(db_path=db_path, biz_name=biz_name)
                 
                 st.success("Setup complete! Refreshing application...")
                 st.rerun()
@@ -82,17 +66,20 @@ if not st.session_state.config:
 def init_db():
     """Ensures the local database is initialized."""
     if st.session_state.config:
-        db_path = st.session_state.config.get('db_path')
+        db_path = st.session_state.config.get('db_path', get_default_db_path())
         if not os.path.exists(db_path):
             with st.spinner("Initializing local operational database..."):
                 rebuild_clients(db_path=db_path)
 
 def get_db():
     """Injected database connection using the configured local path."""
-    try:
-        return sqlite3.connect(st.session_state.config['db_path'])
-    except:
-        return sqlite3.connect(os.path.join(BASE_DIR, "NewLoanManager.db"))
+    if not st.session_state.config or 'db_path' not in st.session_state.config:
+        st.error("Database path not configured. Please complete the setup wizard.")
+        st.stop()
+
+    db_path = st.session_state.config.get('db_path', get_default_db_path())
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    return sqlite3.connect(db_path)
 
 # Run initialization
 init_db()

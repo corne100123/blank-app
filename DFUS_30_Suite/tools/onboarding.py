@@ -3,13 +3,8 @@ import sqlite3
 import os
 from datetime import datetime
 
-def get_local_connection():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
 # --- MAIN APP ---
-def run(get_db_ignored, audit_tool_ignored):
+def run(get_db, audit_tool_ignored):
     st.header("📝 Client Onboarding")
     st.markdown("Enter full KYC, Employment, and Compliance details below.")
 
@@ -176,7 +171,7 @@ def run(get_db_ignored, audit_tool_ignored):
             st.error("⚠️ Error: First Name, Last Name, and ID Number are mandatory.")
         else:
             try:
-                with get_local_connection() as conn:
+                with get_db() as conn:
                     cursor = conn.cursor()
                     
                     # 1. Check for duplicates

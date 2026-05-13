@@ -1,8 +1,12 @@
 import sqlite3
+from config import _get_configured_db_path_for_scripts
 
-db_path = r"D:\FUS_30_Suite\NewLoanManager.db"
+db_path = _get_configured_db_path_for_scripts()
 
 def run_fix():
+    if not db_path:
+        print("Error: Database path not found in configuration. Please run the main app setup first.")
+        return
     print(f"🔧 Connecting to {db_path}...")
     try:
         conn = sqlite3.connect(db_path)

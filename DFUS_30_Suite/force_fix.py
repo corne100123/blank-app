@@ -1,10 +1,14 @@
 import sqlite3
 import os
+from config import _get_configured_db_path_for_scripts
 
-# Dynamic path relative to this script
-db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "NewLoanManager.db")
+# Dynamic path relative to the configured application database
+db_path = _get_configured_db_path_for_scripts()
 
 def run_force_fix():
+    if not db_path:
+        print("Error: Database path not found in configuration. Please run the main app setup first.")
+        return
     print(f"🔧 Connecting to {db_path}...")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()

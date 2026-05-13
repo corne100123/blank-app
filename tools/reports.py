@@ -1,14 +1,14 @@
-import os
 import streamlit as st
 import pandas as pd
 import io
 import sqlite3
 from datetime import datetime
+from DFUS_30_Suite.config import _get_configured_db_path_for_scripts, get_default_db_path
 
 # --- DATABASE CONNECTION ---
 def get_local_connection():
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
+    db_path = _get_configured_db_path_for_scripts() or get_default_db_path()
+    return sqlite3.connect(str(db_path))
 
 def run(get_db_ignored):
     st.header("📊 Ledger Reports & Exports")

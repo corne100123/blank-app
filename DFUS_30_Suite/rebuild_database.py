@@ -1,8 +1,15 @@
 import sqlite3
 import os
+from config import _get_configured_db_path_for_scripts, get_default_db_path
 
-def rebuild_clients(db_path="NewLoanManager.db"):
+def rebuild_clients(db_path=None, biz_name=None):
+    if db_path is None:
+        db_path = _get_configured_db_path_for_scripts()
+    if not db_path:
+        db_path = get_default_db_path()
+    db_path = str(db_path)
     print(f"🔧 Connecting to {db_path}...")
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -18,6 +25,7 @@ def rebuild_clients(db_path="NewLoanManager.db"):
     # 2. DELETE THE BROKEN TABLES
     # We drop it entirely so we can rebuild it 100% correctly
     print("\n--- 🗑️ Deleting Broken Tables ---")
+    cursor.execute("DROP TABLE IF EXISTS business_config")
     cursor.execute("DROP TABLE IF EXISTS clients")
     cursor.execute("DROP TABLE IF EXISTS loans")
     cursor.execute("DROP TABLE IF EXISTS payment_history")
@@ -26,6 +34,17 @@ def rebuild_clients(db_path="NewLoanManager.db"):
     print("✅ Old tables deleted.")
 
     # 3. CREATE THE NEW TABLES (The 'Correct' Structure)
+    print("--- 🔨 Building Business Config Table ---")
+    cursor.execute("""
+        CREATE TABLE business_config (
+            config_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_name TEXT NOT NULL,
+            registration_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            cloud_sync_id TEXT
+        )
+    """)
+    print("✅ Business config table created.")
+
     print("--- 🔨 Building New 'Users' Table ---")
     cursor.execute("""
         CREATE TABLE users (
@@ -111,7 +130,16 @@ def rebuild_clients(db_path="NewLoanManager.db"):
     """)
     print("✅ Expenses table created.")
 
-    # 4. INSERT A TEST CLIENT (So the tool works immediately)
+    # 4. INSERT BUSINESS PROFILE
+    if biz_name:
+        print("--- 🔨 Inserting Business Profile ---")
+        cursor.execute("""
+            INSERT INTO business_config (business_name, cloud_sync_id)
+            VALUES (?, NULL)
+        """, (biz_name,))
+        print("✅ Business profile recorded.")
+
+    # 5. INSERT TEST DATA
     print("--- 🌱 Seeding Test Data ---")
     
     # Insert a test agent with columns matching user_management.py

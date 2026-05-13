@@ -4,18 +4,12 @@ from datetime import datetime
 import sqlite3
 import os
 
-# --- 1. DATABASE CONNECTION ---
-def get_local_connection():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    db_path = os.path.join(base_dir, "..", "NewLoanManager.db")
-    return sqlite3.connect(db_path)
-
 # --- 2. MAIN PAYMENTS TOOL ---
-def run(get_db_ignored, audit_tool_ignored):
+def run(get_db, audit_tool_ignored):
     st.header("💸 Payments")
 
     # --- STEP 1: SELECT LOAN ---
-    with get_local_connection() as conn:
+    with get_db() as conn:
         query = """
             SELECT l.loan_id, c.first_name, c.last_name, l.principal, l.balance 
             FROM loans l
@@ -52,7 +46,7 @@ def run(get_db_ignored, audit_tool_ignored):
             
             if st.form_submit_button("Confirm Payment"):
                 try:
-                    with get_local_connection() as conn:
+                    with get_db() as conn:
                         cursor = conn.cursor()
 
                         # Get current agent ID from session state
@@ -84,7 +78,7 @@ def run(get_db_ignored, audit_tool_ignored):
 
     with col2:
         st.subheader("📄 History")
-        with get_local_connection() as conn:
+        with get_db() as conn:
             # UPDATED: Selecting 'date' and 'type' instead of 'date_paid' and 'method'
             hist_query = f"SELECT date, amount, type FROM payment_history WHERE loan_id = {loan_id}"
             history = pd.read_sql_query(hist_query, conn)
