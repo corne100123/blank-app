@@ -5,3 +5,6 @@ openpyxl
 requests
 fpdf2
 python-docx
+Jinja2
+WeasyPrint
+Pillow
