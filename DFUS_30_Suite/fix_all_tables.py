@@ -65,6 +65,7 @@ def run_fix():
             last_login TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'users', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'agents' table...")
     cursor.execute("""
@@ -78,6 +79,7 @@ def run_fix():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'agents', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'clients' table...")
     cursor.execute("""
@@ -102,6 +104,7 @@ def run_fix():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'clients', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'reassignment_history' table...")
     cursor.execute("""
@@ -115,6 +118,7 @@ def run_fix():
             changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'reassignment_history', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'loans' table...")
     cursor.execute("""
@@ -129,6 +133,7 @@ def run_fix():
             due_date DATE
         )
     """)
+    _safe_add_column(cursor, 'loans', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'payment_history' table...")
     cursor.execute("""
@@ -141,6 +146,7 @@ def run_fix():
             method TEXT
         )
     """)
+    _safe_add_column(cursor, 'payment_history', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'expenses' table...")
     cursor.execute("""
@@ -153,6 +159,7 @@ def run_fix():
             category TEXT DEFAULT 'General'
         )
     """)
+    _safe_add_column(cursor, 'expenses', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'invoices' table...")
     cursor.execute("""
@@ -170,6 +177,7 @@ def run_fix():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'invoices', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'invoice_audit' table...")
     cursor.execute("""
@@ -183,6 +191,7 @@ def run_fix():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'invoice_audit', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'cashups' table...")
     cursor.execute("""
@@ -213,6 +222,7 @@ def run_fix():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'cashups', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     print("Checking 'compliance_documents' table...")
     cursor.execute("""
@@ -226,6 +236,7 @@ def run_fix():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    _safe_add_column(cursor, 'compliance_documents', 'tenant_id INTEGER NOT NULL DEFAULT 1')
 
     conn.commit()
     conn.close()

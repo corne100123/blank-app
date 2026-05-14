@@ -11,6 +11,7 @@ from db_helpers import (
     create_user,
     authenticate_user,
 )
+from fix_all_tables import run_fix
 
 VERSION = "1.0.0"
 
@@ -82,6 +83,12 @@ def get_db():
     return sqlite3.connect(db_path)
 
 init_db()
+
+# Temporary: Run schema fix if needed
+try:
+    run_fix()
+except Exception as e:
+    pass  # Ignore errors, as it might fail if already fixed
 
 # --- PRE-LOGIN TENANT ROUTING ---
 if not st.session_state.tenant_id or not st.session_state.role:
