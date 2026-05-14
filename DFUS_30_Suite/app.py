@@ -61,7 +61,7 @@ if not st.session_state.config:
                 os.makedirs(os.path.dirname(db_path), exist_ok=True)
                 initialize_schema(db_path)
                 st.success("Local database initialized. Continue to register or login.")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Please provide a valid database path.")
     st.stop()
@@ -127,7 +127,7 @@ if not st.session_state.tenant_id or not st.session_state.role:
                         st.session_state.username = admin_username
                         st.session_state.full_name = admin_name
                         st.success("Business registered successfully. You are now logged in as Admin.")
-                        st.experimental_rerun()
+                        st.rerun()
     else:
         st.subheader("Login to Existing Business")
         tenants = list_tenants(db_path)
@@ -157,7 +157,7 @@ if not st.session_state.tenant_id or not st.session_state.role:
                             st.session_state.username = user['username']
                             st.session_state.full_name = user['full_name']
                             st.success(f"Logged in as {user['role']} for {tenant['business_name']}")
-                            st.experimental_rerun()
+                            st.rerun()
     st.stop()
 
 check_for_updates()
@@ -231,4 +231,4 @@ if st.sidebar.button("Logout"):
     st.session_state.username = None
     st.session_state.user_id = None
     st.session_state.full_name = None
-    st.experimental_rerun()
+    st.rerun()
